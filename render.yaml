@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: hospital-chatbot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:appAPI --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_API_KEY
+        sync: false

@@ -1,0 +1,295 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    color-scheme: light;
+    --ink: #0f172a;
+    --muted: #5b6b76;
+    --accent: #0ea5a4;
+    --accent-strong: #0b7d7c;
+    --surface: rgba(255, 255, 255, 0.78);
+    --surface-strong: rgba(255, 255, 255, 0.9);
+    --line: rgba(15, 23, 42, 0.12);
+    --shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+}
+
+body {
+    background: radial-gradient(circle at 18% 20%, #f7fbff 0%, #eef6fb 42%, #f7f0ea 100%);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    height: 100vh;
+    overflow: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(14, 165, 164, 0.08), rgba(249, 115, 22, 0.05));
+    opacity: 0.7;
+    z-index: 0;
+    pointer-events: none;
+}
+
+#vrm-canvas {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+}
+
+#model-shadow {
+    position: fixed;
+    bottom: 118px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 160px;
+    height: 22px;
+    background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18) 0%, transparent 72%);
+    border-radius: 50%;
+    z-index: 2;
+    transition: opacity 0.5s ease;
+}
+
+#transcript {
+    position: fixed;
+    inset: 0;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    overflow-y: auto;
+    padding: 64px 32px 160px;
+    scrollbar-width: none;
+    z-index: 4;
+    pointer-events: none;
+}
+
+#transcript::-webkit-scrollbar {
+    display: none;
+}
+
+#transcript.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.usermsg {
+    align-self: flex-end;
+    text-align: right;
+    max-width: 65%;
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.5;
+    background: rgba(15, 23, 42, 0.08);
+    padding: 12px 16px;
+    border-radius: 18px 18px 6px 18px;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.botmsg {
+    align-self: flex-start;
+    max-width: 65%;
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.5;
+    background: rgba(14, 165, 164, 0.12);
+    padding: 12px 16px;
+    border-radius: 18px 18px 18px 6px;
+    border: 1px solid rgba(14, 165, 164, 0.25);
+}
+
+#btn {
+    background: var(--ink);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    height: 62px;
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    bottom: 54px;
+    left: 50%;
+    width: 62px;
+    border-radius: 50%;
+    border: 2.5px solid var(--ink);
+    color: #ffffff;
+    font-size: 10px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    cursor: pointer;
+    z-index: 10;
+    transform: translateX(-50%);
+    transition: background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s ease;
+}
+
+#btn.active {
+    background: #f97316;
+    border-color: #f97316;
+    box-shadow: 0 16px 30px rgba(249, 115, 22, 0.3);
+}
+
+#btn.botpesu {
+    animation: lapdap 1.3s ease-in-out infinite;
+}
+
+@keyframes lapdap {
+    0% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5);
+    }
+
+    70% {
+        box-shadow: 0 0 0 44px rgba(249, 115, 22, 0.0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    }
+}
+
+#btn.userpesu {
+    animation: heal 1.1s ease-in-out infinite;
+}
+
+@keyframes heal {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(249, 115, 22, 0), inset 0 0 0px rgba(255, 255, 255, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 22px 5px rgba(249, 115, 22, 0.18), inset 0 0 18px rgba(255, 255, 255, 0.25);
+    }
+}
+
+.dot {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.dot span {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+    animation: dotbounce 1.2s ease-in-out infinite;
+}
+
+.dot span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes dotbounce {
+
+    0%,
+    80%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    40% {
+        transform: scale(1.4);
+        opacity: 1;
+    }
+}
+
+#status {
+    position: fixed;
+    bottom: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+    font-size: 16px;
+    color: var(--muted);
+    white-space: nowrap;
+    letter-spacing: 1px;
+    z-index: 10;
+}
+
+body:has(#btn:not(.active)) #status::after {
+    content: "tap to speak";
+}
+
+body:has(#btn.active:not(.botpesu):not(.userpesu)) #status::after {
+    content: "connected";
+}
+
+body:has(#btn.botpesu) #status::after {
+    content: "speaking...";
+}
+
+body:has(#btn.userpesu) #status::after {
+    content: "listening...";
+}
+
+#card {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface-strong);
+    border-top: 1px solid var(--line);
+    padding: 16px 32px 140px;
+    max-height: 65vh;
+    overflow-y: auto;
+    transform: translateY(0);
+    transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+    scrollbar-width: none;
+    z-index: 8;
+    box-shadow: 0 -18px 40px rgba(15, 23, 42, 0.15);
+}
+
+#card::-webkit-scrollbar {
+    display: none;
+}
+
+#card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 3px;
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: 2px;
+    margin: 0 auto 18px;
+}
+
+#card.hidden {
+    transform: translateY(110%);
+}
+
+@media (max-width: 900px) {
+    #transcript {
+        padding: 56px 20px 170px;
+    }
+
+    .usermsg,
+    .botmsg {
+        max-width: 80%;
+    }
+}
+
+@media (max-width: 600px) {
+    #btn {
+        height: 56px;
+        width: 56px;
+        bottom: 46px;
+    }
+
+    #status {
+        font-size: 14px;
+    }
+
+    #card {
+        padding: 12px 20px 120px;
+    }
+}

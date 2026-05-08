@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+flask
+flask-cors
+google-genai
+pipecat-ai
