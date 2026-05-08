@@ -13,7 +13,6 @@ from pipecat.frames.frames import LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.frames.frames import StartFrame
 from google.genai.types import HarmCategory, HarmBlockThreshold, ProactivityConfig
 from pipecat.services.google.gemini_live.llm import (
