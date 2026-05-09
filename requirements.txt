@@ -4,3 +4,4 @@ flask
 flask-cors
 google-genai
 pipecat-ai
+pipecat-ai[google]
