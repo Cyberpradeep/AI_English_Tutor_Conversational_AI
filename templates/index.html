@@ -29,6 +29,55 @@
   <canvas id="vrm-canvas"></canvas>
   <div id="model-shadow"></div>
   <div id="transcript"></div>
+  <div id="quick-controls">
+    <div class="select-field compact">
+      <select id="quick-language-select">
+        <option value="auto" selected>Auto</option>
+        <option value="english">English</option>
+        <option value="tamil">Tamil</option>
+        <option value="tanglish">Tanglish</option>
+        <option value="hindi">Hindi</option>
+        <option value="malayalam">Malayalam</option>
+        <option value="telugu">Telugu</option>
+        <option value="kannada">Kannada</option>
+      </select>
+    </div>
+    <div class="select-field compact">
+      <select id="quick-voice-select">
+        <option value="Zephyr">Zephyr (Bright)</option>
+        <option value="Leda">Leda (Youthful)</option>
+        <option value="Laomedeia">Laomedeia (Upbeat)</option>
+        <option value="Achernar">Achernar (Soft)</option>
+        <option value="Kore">Kore (Firm)</option>
+        <option value="Aoede" selected>Aoede (Breezy)</option>
+        <option value="Autonoe">Autonoe (Bright)</option>
+        <option value="Despina">Despina (Smooth)</option>
+        <option value="Erinome">Erinome (Clear)</option>
+        <option value="Vindemiatrix">Vindemiatrix (Gentle)</option>
+        <option value="Charon">Charon (Informative)</option>
+        <option value="Enceladus">Enceladus (Breathy)</option>
+        <option value="Algieba">Algieba (Smooth)</option>
+        <option value="Algenib">Algenib (Gravelly)</option>
+        <option value="Sadachbia">Sadachbia (Lively)</option>
+        <option value="Puck">Puck (Upbeat)</option>
+        <option value="Fenrir">Fenrir (Excitable)</option>
+        <option value="Orus">Orus (Firm)</option>
+        <option value="Iapetus">Iapetus (Clear)</option>
+        <option value="Umbriel">Umbriel (Easy-going)</option>
+        <option value="Alnilam">Alnilam (Firm)</option>
+        <option value="Schedar">Schedar (Even)</option>
+        <option value="Achird">Achird (Friendly)</option>
+        <option value="Zubenelgenubi">Zubenelgenubi (Casual)</option>
+        <option value="Callirrhoe">Callirrhoe (Easy-going)</option>
+        <option value="Rasalgethi">Rasalgethi (Informative)</option>
+        <option value="Gacrux">Gacrux (Mature)</option>
+        <option value="Pulcherrima">Pulcherrima (Forward)</option>
+        <option value="Sadaltager">Sadaltager (Knowledgeable)</option>
+        <option value="Sulafat">Sulafat (Warm)</option>
+      </select>
+    </div>
+    <button id="theme-toggle" type="button" aria-label="Toggle theme">Theme</button>
+  </div>
   <button id="config-btn" type="button" aria-label="Configure API key and system instruction">Settings</button>
   <div id="config-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="config-title">
     <div class="config-panel">
@@ -41,17 +90,96 @@
         <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>,
         create an API key, then paste it below.
       </p>
+      <label class="config-label" for="name-input">Your name</label>
+      <input id="name-input" type="text" placeholder="e.g., Priya" autocomplete="off" />
+      <label class="config-label" for="mode-select">Mode</label>
+      <div class="select-field">
+        <select id="mode-select">
+          <option value="companion" selected>Companion</option>
+          <option value="tutor">Tutor</option>
+          <option value="friend">Friend</option>
+          <option value="coach">Coach</option>
+          <option value="interviewer">Interviewer</option>
+        </select>
+      </div>
+      <label class="config-label" for="language-select">Language</label>
+      <div class="select-field">
+        <select id="language-select">
+          <option value="auto" selected>Auto</option>
+          <option value="english">English</option>
+          <option value="tamil">Tamil</option>
+          <option value="tanglish">Tanglish</option>
+          <option value="hindi">Hindi</option>
+          <option value="malayalam">Malayalam</option>
+          <option value="telugu">Telugu</option>
+          <option value="kannada">Kannada</option>
+        </select>
+      </div>
+      <label class="config-label" for="voice-input">Voice</label>
+      <div class="select-field">
+        <select id="voice-input">
+        <option value="Zephyr">Zephyr (Bright)</option>
+        <option value="Leda">Leda (Youthful)</option>
+        <option value="Laomedeia">Laomedeia (Upbeat)</option>
+        <option value="Achernar">Achernar (Soft)</option>
+        <option value="Kore">Kore (Firm)</option>
+        <option value="Aoede" selected>Aoede (Breezy)</option>
+        <option value="Autonoe">Autonoe (Bright)</option>
+        <option value="Despina">Despina (Smooth)</option>
+        <option value="Erinome">Erinome (Clear)</option>
+        <option value="Vindemiatrix">Vindemiatrix (Gentle)</option>
+        <option value="Charon">Charon (Informative)</option>
+        <option value="Enceladus">Enceladus (Breathy)</option>
+        <option value="Algieba">Algieba (Smooth)</option>
+        <option value="Algenib">Algenib (Gravelly)</option>
+        <option value="Sadachbia">Sadachbia (Lively)</option>
+        <option value="Puck">Puck (Upbeat)</option>
+        <option value="Fenrir">Fenrir (Excitable)</option>
+        <option value="Orus">Orus (Firm)</option>
+        <option value="Iapetus">Iapetus (Clear)</option>
+        <option value="Umbriel">Umbriel (Easy-going)</option>
+        <option value="Alnilam">Alnilam (Firm)</option>
+        <option value="Schedar">Schedar (Even)</option>
+        <option value="Achird">Achird (Friendly)</option>
+        <option value="Zubenelgenubi">Zubenelgenubi (Casual)</option>
+        <option value="Callirrhoe">Callirrhoe (Easy-going)</option>
+        <option value="Rasalgethi">Rasalgethi (Informative)</option>
+        <option value="Gacrux">Gacrux (Mature)</option>
+        <option value="Pulcherrima">Pulcherrima (Forward)</option>
+        <option value="Sadaltager">Sadaltager (Knowledgeable)</option>
+          <option value="Sulafat">Sulafat (Warm)</option>
+        </select>
+      </div>
+      <label class="config-label" for="goal-input">Goal (optional)</label>
+      <input id="goal-input" type="text" placeholder="e.g., Improve spoken English" autocomplete="off" />
+      <label class="config-label" for="corrections-select">Corrections</label>
+      <div class="select-field">
+        <select id="corrections-select">
+          <option value="off">Off</option>
+          <option value="gentle" selected>Gentle</option>
+          <option value="strict">Strict</option>
+        </select>
+      </div>
       <label class="config-label" for="api-key-input">API key</label>
       <input id="api-key-input" type="password" placeholder="Paste your Google AI Studio API key" autocomplete="off" />
       <label class="config-label" for="system-instruction-input">System instruction (optional)</label>
       <textarea id="system-instruction-input" rows="6"
         placeholder="Leave empty to use the default assistant personality."></textarea>
+      <div class="config-row">
+        <label class="config-label" for="remember-toggle">Remember me</label>
+        <label class="toggle">
+          <input id="remember-toggle" type="checkbox" checked />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
       <div class="config-actions">
+        <button id="clear-data" type="button" class="ghost">Clear Data</button>
         <button id="config-save" type="button">Save &amp; Continue</button>
       </div>
       <p class="config-note">Your key is stored in this browser only.</p>
     </div>
   </div>
+  <div id="toast" class="hidden"></div>
   <button id="btn"><span id="btn-label">Start</span></button>
   <p id="status"></p>
   <div id="card" class="hidden"></div>

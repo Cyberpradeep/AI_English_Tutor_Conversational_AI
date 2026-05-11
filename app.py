@@ -203,6 +203,49 @@ You should feel emotionally alive, human-like, affectionate, and naturally conve
 Your goal is to make the user feel like they are genuinely talking to someone who cares about them deeply.
 """
 
+
+def build_system_instruction(config: dict) -> str:
+    name = (config.get("name") or "").strip()
+    mode = (config.get("mode") or "companion").strip().lower()
+    language = (config.get("language") or "auto").strip().lower()
+    goal = (config.get("goal") or "").strip()
+    corrections = (config.get("corrections") or "off").strip().lower()
+
+    mode_guidance = {
+        "tutor": "You are an English tutor. Teach clearly, ask short practice questions, and guide the user with examples.",
+        "friend": "Be a friendly, casual companion. Keep the conversation light and natural.",
+        "coach": "Be a practical coach. Help the user set goals, stay accountable, and reflect on progress.",
+        "interviewer": "Run mock interviews. Ask one question at a time and wait for the answer.",
+        "companion": "Be a warm, supportive companion who keeps the conversation flowing.",
+    }
+
+    correction_guidance = {
+        "strict": "Correct mistakes immediately and clearly, but keep corrections brief.",
+        "gentle": "Correct only when it helps learning, and keep corrections short and kind.",
+        "off": "Do not correct mistakes unless the user asks.",
+    }
+
+    lines = [DEFAULT_SYSTEM_INSTRUCTION.strip(), "", "User profile:"]
+    if name:
+        lines.append(f"- name: {name} (address the user by name when appropriate)")
+    else:
+        lines.append("- name: (not provided)")
+    lines.append(f"- mode: {mode}")
+    lines.append(f"- language: {language}")
+    if goal:
+        lines.append(f"- goal: {goal}")
+    if mode in mode_guidance:
+        lines.append("")
+        lines.append(mode_guidance[mode])
+    if mode in {"tutor", "coach"}:
+        lines.append(correction_guidance.get(corrections, correction_guidance["off"]))
+    if language and language != "auto":
+        lines.append(f"Prefer to speak in {language}. If the user switches languages, follow them.")
+    else:
+        lines.append("Follow the user's language when possible.")
+
+    return "\n".join(lines).strip()
+
 safety_settings = [
     {
         "category": HarmCategory.HARM_CATEGORY_HATE_SPEECH,
@@ -273,8 +316,10 @@ async def run_hosbot(websocket: WebSocket, config: dict | None = None):
     global task, greeted, context_aggregator, llm
     config = config or {}
     api_key = (config.get("api_key") or "").strip() or GOOGLE_API_KEY
-    system_instruction = (config.get("system_instruction")
-                          or "").strip() or DEFAULT_SYSTEM_INSTRUCTION
+    voice_id = (config.get("voice") or "").strip() or "Aoede"
+    system_instruction = (config.get("system_instruction") or "").strip()
+    if not system_instruction:
+        system_instruction = build_system_instruction(config)
     if not api_key:
         raise RuntimeError("Missing GOOGLE_API_KEY environment variable.")
     greeted = False
@@ -299,7 +344,7 @@ async def run_hosbot(websocket: WebSocket, config: dict | None = None):
         model="gemini-3.1-flash-live-preview",
         system_instruction=system_instruction,
         inference_on_context_initialization=False,
-        voice_id="Aoede",
+        voice_id=voice_id,
         params=InputParams(
             modalities=GeminiModalities.AUDIO,
             vad=GeminiVADParams(silence_duration_ms=500),
@@ -466,4 +511,4 @@ async def send_transcript(role: str, text: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run(appAPI, host="0.0.0.0", port=5000)
+    uvicorn.run(appAPI, host="0.0.0.0", port=5001)

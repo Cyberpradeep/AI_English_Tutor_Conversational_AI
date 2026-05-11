@@ -4,9 +4,21 @@ const welcome = document.getElementById("welcome");
 const transcript = document.getElementById("transcript");
 const card = document.getElementById("card");
 const configBtn = document.getElementById("config-btn");
+const quickLanguageSelect = document.getElementById("quick-language-select");
+const quickVoiceSelect = document.getElementById("quick-voice-select");
+const themeToggle = document.getElementById("theme-toggle");
 const configModal = document.getElementById("config-modal");
 const configClose = document.getElementById("config-close");
 const configSave = document.getElementById("config-save");
+const rememberToggle = document.getElementById("remember-toggle");
+const clearDataBtn = document.getElementById("clear-data");
+const toast = document.getElementById("toast");
+const nameInput = document.getElementById("name-input");
+const modeSelect = document.getElementById("mode-select");
+const languageSelect = document.getElementById("language-select");
+const voiceInput = document.getElementById("voice-input");
+const goalInput = document.getElementById("goal-input");
+const correctionsSelect = document.getElementById("corrections-select");
 const apiKeyInput = document.getElementById("api-key-input");
 const systemInstructionInput = document.getElementById("system-instruction-input");
 let isRunning = false;
@@ -32,35 +44,205 @@ let conversation = [];
 let attempt = 0;
 const maxAttempt = 3;
 const RETRYABLE_WS_CLOSE_CODES = new Set([1006, 1008, 1011, 1012, 1013]);
+const customSelects = new Map();
 
 const STORAGE_API_KEY = "gemini_api_key";
 const STORAGE_SYSTEM_INSTRUCTION = "gemini_system_instruction";
+const STORAGE_NAME = "gemini_user_name";
+const STORAGE_MODE = "gemini_mode";
+const STORAGE_LANGUAGE = "gemini_language";
+const STORAGE_VOICE = "gemini_voice";
+const STORAGE_GOAL = "gemini_goal";
+const STORAGE_CORRECTIONS = "gemini_corrections";
+const STORAGE_REMEMBER = "gemini_remember";
+const STORAGE_THEME = "gemini_theme";
+const CONFIG_KEYS = [
+    STORAGE_NAME,
+    STORAGE_MODE,
+    STORAGE_LANGUAGE,
+    STORAGE_VOICE,
+    STORAGE_GOAL,
+    STORAGE_CORRECTIONS,
+    STORAGE_API_KEY,
+    STORAGE_SYSTEM_INSTRUCTION
+];
+
+function isRememberEnabled() {
+    return (localStorage.getItem(STORAGE_REMEMBER) || "true") === "true";
+}
+
+function getConfigStorage() {
+    return isRememberEnabled() ? localStorage : sessionStorage;
+}
+
+function showToast(message) {
+    if (!toast) {
+        return;
+    }
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    window.clearTimeout(showToast._timer);
+    showToast._timer = window.setTimeout(() => {
+        toast.classList.add("hidden");
+    }, 2200);
+}
 
 function loadConfig() {
+    const storage = getConfigStorage();
     return {
-        apiKey: (localStorage.getItem(STORAGE_API_KEY) || "").trim(),
-        systemInstruction: (localStorage.getItem(STORAGE_SYSTEM_INSTRUCTION) || "").trim()
+        name: (storage.getItem(STORAGE_NAME) || "").trim(),
+        mode: (storage.getItem(STORAGE_MODE) || "companion").trim(),
+        language: (storage.getItem(STORAGE_LANGUAGE) || "auto").trim(),
+        voice: (storage.getItem(STORAGE_VOICE) || "Aoede").trim(),
+        goal: (storage.getItem(STORAGE_GOAL) || "").trim(),
+        corrections: (storage.getItem(STORAGE_CORRECTIONS) || "gentle").trim(),
+        apiKey: (storage.getItem(STORAGE_API_KEY) || "").trim(),
+        systemInstruction: (storage.getItem(STORAGE_SYSTEM_INSTRUCTION) || "").trim()
     };
 }
 
 function saveConfig() {
+    const storage = getConfigStorage();
+    const name = nameInput.value.trim();
+    const mode = modeSelect.value;
+    const language = languageSelect.value;
+    const voice = voiceInput.value.trim() || "Aoede";
+    const goal = goalInput.value.trim();
+    const corrections = correctionsSelect.value;
     const apiKey = apiKeyInput.value.trim();
     const systemInstruction = systemInstructionInput.value.trim();
+
+    storage.setItem(STORAGE_NAME, name);
+    storage.setItem(STORAGE_MODE, mode);
+    storage.setItem(STORAGE_LANGUAGE, language);
+    storage.setItem(STORAGE_VOICE, voice);
+    storage.setItem(STORAGE_GOAL, goal);
+    storage.setItem(STORAGE_CORRECTIONS, corrections);
     if (apiKey) {
-        localStorage.setItem(STORAGE_API_KEY, apiKey);
+        storage.setItem(STORAGE_API_KEY, apiKey);
     }
-    localStorage.setItem(STORAGE_SYSTEM_INSTRUCTION, systemInstruction);
+    storage.setItem(STORAGE_SYSTEM_INSTRUCTION, systemInstruction);
+
+    if (!isRememberEnabled()) {
+        CONFIG_KEYS.forEach((key) => localStorage.removeItem(key));
+    }
+    syncQuickControls();
 }
 
 function openConfigModal() {
     const cfg = loadConfig();
+    rememberToggle.checked = isRememberEnabled();
+    nameInput.value = cfg.name;
+    modeSelect.value = cfg.mode || "companion";
+    languageSelect.value = cfg.language || "auto";
+    voiceInput.value = cfg.voice || "Aoede";
+    goalInput.value = cfg.goal;
+    correctionsSelect.value = cfg.corrections || "gentle";
     apiKeyInput.value = cfg.apiKey;
     systemInstructionInput.value = cfg.systemInstruction;
+    applyModeRules();
+    refreshCustomSelects();
     configModal.classList.remove("hidden");
 }
 
 function closeConfigModal() {
     configModal.classList.add("hidden");
+}
+
+function applyModeRules() {
+    const mode = modeSelect.value;
+    const supportsCorrections = mode === "tutor" || mode === "coach";
+    const supportsGoal = mode === "tutor" || mode === "coach" || mode === "interviewer";
+
+    correctionsSelect.disabled = !supportsCorrections;
+    goalInput.disabled = !supportsGoal;
+    if (!supportsCorrections) {
+        correctionsSelect.value = "off";
+    }
+    if (!supportsGoal) {
+        goalInput.value = "";
+    }
+    refreshCustomSelects();
+}
+
+function initCustomSelects() {
+    const selects = document.querySelectorAll(".select-field select");
+    selects.forEach((select) => {
+        if (customSelects.has(select)) {
+            return;
+        }
+
+        const wrapper = select.parentElement;
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "custom-select-trigger";
+        trigger.textContent = select.options[select.selectedIndex]?.textContent || "Select";
+
+        const menu = document.createElement("div");
+        menu.className = "custom-select-menu hidden";
+
+        const buildOptions = () => {
+            menu.innerHTML = "";
+            Array.from(select.options).forEach((option) => {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = "custom-select-option";
+                item.dataset.value = option.value;
+                item.textContent = option.textContent;
+                if (option.selected) {
+                    item.classList.add("selected");
+                }
+                item.addEventListener("click", () => {
+                    select.value = option.value;
+                    select.dispatchEvent(new Event("change"));
+                    trigger.textContent = option.textContent;
+                    closeAllCustomMenus();
+                    buildOptions();
+                });
+                menu.appendChild(item);
+            });
+        };
+
+        buildOptions();
+
+        trigger.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (trigger.disabled) {
+                return;
+            }
+            const isHidden = menu.classList.contains("hidden");
+            closeAllCustomMenus();
+            if (isHidden) {
+                menu.classList.remove("hidden");
+            }
+        });
+
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(menu);
+
+        customSelects.set(select, { trigger, menu, buildOptions });
+        refreshCustomSelect(select);
+    });
+}
+
+function closeAllCustomMenus() {
+    customSelects.forEach(({ menu }) => {
+        menu.classList.add("hidden");
+    });
+}
+
+function refreshCustomSelect(select) {
+    const entry = customSelects.get(select);
+    if (!entry) {
+        return;
+    }
+    entry.trigger.textContent = select.options[select.selectedIndex]?.textContent || "Select";
+    entry.trigger.disabled = select.disabled;
+    entry.buildOptions();
+}
+
+function refreshCustomSelects() {
+    customSelects.forEach((_value, select) => refreshCustomSelect(select));
 }
 
 function ensureConfig() {
@@ -72,18 +254,102 @@ function ensureConfig() {
     return true;
 }
 
+function syncQuickControls() {
+    const cfg = loadConfig();
+    if (quickLanguageSelect) {
+        quickLanguageSelect.value = cfg.language || "auto";
+    }
+    if (quickVoiceSelect) {
+        quickVoiceSelect.value = cfg.voice || "Aoede";
+    }
+    refreshCustomSelects();
+}
+
+function applyTheme(theme) {
+    if (!theme) {
+        theme = localStorage.getItem(STORAGE_THEME) || "light";
+    }
+    document.body.setAttribute("data-theme", theme);
+    if (themeToggle) {
+        themeToggle.textContent = theme === "dark" ? "Light" : "Dark";
+    }
+}
+
+function clearStoredData() {
+    CONFIG_KEYS.forEach((key) => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    });
+    nameInput.value = "";
+    modeSelect.value = "companion";
+    languageSelect.value = "auto";
+    voiceInput.value = "Aoede";
+    goalInput.value = "";
+    correctionsSelect.value = "gentle";
+    apiKeyInput.value = "";
+    systemInstructionInput.value = "";
+    syncQuickControls();
+    applyModeRules();
+    showToast("Saved data cleared");
+}
+
 configBtn?.addEventListener("click", openConfigModal);
 configClose?.addEventListener("click", closeConfigModal);
+modeSelect?.addEventListener("change", applyModeRules);
 configSave?.addEventListener("click", () => {
     saveConfig();
     if (loadConfig().apiKey) {
         closeConfigModal();
     }
 });
+rememberToggle?.addEventListener("change", () => {
+    localStorage.setItem(STORAGE_REMEMBER, rememberToggle.checked ? "true" : "false");
+    if (!rememberToggle.checked) {
+        CONFIG_KEYS.forEach((key) => localStorage.removeItem(key));
+    }
+    saveConfig();
+    showToast(rememberToggle.checked ? "Will remember on this device" : "Remember me disabled");
+});
+clearDataBtn?.addEventListener("click", clearStoredData);
+
+quickLanguageSelect?.addEventListener("change", () => {
+    const storage = getConfigStorage();
+    storage.setItem(STORAGE_LANGUAGE, quickLanguageSelect.value);
+    languageSelect.value = quickLanguageSelect.value;
+    refreshCustomSelects();
+    if (isRunning) {
+        showToast("Language updates next session");
+    }
+});
+
+quickVoiceSelect?.addEventListener("change", () => {
+    const storage = getConfigStorage();
+    storage.setItem(STORAGE_VOICE, quickVoiceSelect.value);
+    voiceInput.value = quickVoiceSelect.value;
+    refreshCustomSelects();
+    if (isRunning) {
+        showToast("Voice updates next session");
+    }
+});
+
+themeToggle?.addEventListener("click", () => {
+    const current = document.body.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    localStorage.setItem(STORAGE_THEME, next);
+    applyTheme(next);
+});
+
+document.addEventListener("click", () => {
+    closeAllCustomMenus();
+});
 
 if (!loadConfig().apiKey) {
     openConfigModal();
 }
+
+initCustomSelects();
+syncQuickControls();
+applyTheme();
 
 function setActive() {
     btn.className = "active";
@@ -144,6 +410,68 @@ function startTrans() {
     };
 }
 
+function renderGenUI(payload) {
+    if (!card) {
+        return;
+    }
+    if (!payload) {
+        card.classList.add("hidden");
+        card.innerHTML = "";
+        return;
+    }
+
+    card.classList.remove("hidden");
+    card.innerHTML = "";
+
+    const type = payload.type || "text";
+    const data = payload.data || {};
+
+    const title = document.createElement("h3");
+    title.textContent = data.title || (type === "text" ? "Assistant" : "Highlights");
+    title.style.marginBottom = "10px";
+    title.style.fontSize = "18px";
+
+    card.appendChild(title);
+
+    if (type === "card") {
+        if (data.body) {
+            const body = document.createElement("p");
+            body.textContent = data.body;
+            body.style.marginBottom = "12px";
+            card.appendChild(body);
+        }
+        if (Array.isArray(data.items)) {
+            const list = document.createElement("ul");
+            list.style.paddingLeft = "18px";
+            data.items.forEach((item) => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                list.appendChild(li);
+            });
+            card.appendChild(list);
+        }
+    } else {
+        const body = document.createElement("p");
+        body.textContent = data.text || payload.text || JSON.stringify(payload);
+        card.appendChild(body);
+    }
+}
+
+function startGenUI() {
+    uirsc = new EventSource(`${API}/gen-ui`);
+    uirsc.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        renderGenUI(data);
+    };
+}
+
+function stopGenUI() {
+    if (uirsc) {
+        uirsc.close();
+        uirsc = null;
+    }
+}
+
 function stopTrans() {
     if (esrc) {
 
@@ -184,6 +512,12 @@ async function startAudioCapture() {
         attempt = 0;
         const payload = {
             type: "config",
+            name: cfg.name,
+            mode: cfg.mode,
+            language: cfg.language,
+            voice: cfg.voice || "Aoede",
+            goal: cfg.goal,
+            corrections: cfg.corrections,
             api_key: cfg.apiKey,
             system_instruction: cfg.systemInstruction || ""
         };
@@ -330,6 +664,7 @@ btn.onclick = async () => {
         btnlabel.textContent = "Stopping";
         // stopTrans();
         stopAudioCapture();
+        stopGenUI();
         await fetch(`${API}/restart`);
         // transcript.classList.remove("visible");
         // transcript.innerHTML = "";
@@ -357,6 +692,7 @@ btn.onclick = async () => {
     btnlabel.innerHTML = `<div class="dot"><span></span><span></span><span></span></div>`;
 
 
+    startGenUI();
     await startAudioCapture();
     // startTrans();
     isRunning = true;
