@@ -442,11 +442,11 @@ body:has(#btn.userpesu) #status::after {
     transition: transform 0.2s ease;
 }
 
-.toggle input:checked + .toggle-track {
+.toggle input:checked+.toggle-track {
     background: rgba(34, 197, 94, 0.7);
 }
 
-.toggle input:checked + .toggle-track::after {
+.toggle input:checked+.toggle-track::after {
     transform: translateX(20px);
 }
 

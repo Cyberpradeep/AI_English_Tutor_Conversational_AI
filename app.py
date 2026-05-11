@@ -227,7 +227,8 @@ def build_system_instruction(config: dict) -> str:
 
     lines = [DEFAULT_SYSTEM_INSTRUCTION.strip(), "", "User profile:"]
     if name:
-        lines.append(f"- name: {name} (address the user by name when appropriate)")
+        lines.append(
+            f"- name: {name} (address the user by name when appropriate)")
     else:
         lines.append("- name: (not provided)")
     lines.append(f"- mode: {mode}")
@@ -238,13 +239,16 @@ def build_system_instruction(config: dict) -> str:
         lines.append("")
         lines.append(mode_guidance[mode])
     if mode in {"tutor", "coach"}:
-        lines.append(correction_guidance.get(corrections, correction_guidance["off"]))
+        lines.append(correction_guidance.get(
+            corrections, correction_guidance["off"]))
     if language and language != "auto":
-        lines.append(f"Prefer to speak in {language}. If the user switches languages, follow them.")
+        lines.append(
+            f"Prefer to speak in {language}. If the user switches languages, follow them.")
     else:
         lines.append("Follow the user's language when possible.")
 
     return "\n".join(lines).strip()
+
 
 safety_settings = [
     {
