@@ -273,7 +273,8 @@ async def run_hosbot(websocket: WebSocket, config: dict | None = None):
     global task, greeted, context_aggregator, llm
     config = config or {}
     api_key = (config.get("api_key") or "").strip() or GOOGLE_API_KEY
-    system_instruction = (config.get("system_instruction") or "").strip() or DEFAULT_SYSTEM_INSTRUCTION
+    system_instruction = (config.get("system_instruction")
+                          or "").strip() or DEFAULT_SYSTEM_INSTRUCTION
     if not api_key:
         raise RuntimeError("Missing GOOGLE_API_KEY environment variable.")
     greeted = False
