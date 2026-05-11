@@ -29,6 +29,29 @@
   <canvas id="vrm-canvas"></canvas>
   <div id="model-shadow"></div>
   <div id="transcript"></div>
+  <button id="config-btn" type="button" aria-label="Configure API key and system instruction">Settings</button>
+  <div id="config-modal" class="hidden" role="dialog" aria-modal="true" aria-labelledby="config-title">
+    <div class="config-panel">
+      <div class="config-header">
+        <h2 id="config-title">Connect Your Google AI Studio Key</h2>
+        <button id="config-close" type="button" aria-label="Close">×</button>
+      </div>
+      <p class="config-help">
+        To get a key: open
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>,
+        create an API key, then paste it below.
+      </p>
+      <label class="config-label" for="api-key-input">API key</label>
+      <input id="api-key-input" type="password" placeholder="Paste your Google AI Studio API key" autocomplete="off" />
+      <label class="config-label" for="system-instruction-input">System instruction (optional)</label>
+      <textarea id="system-instruction-input" rows="6"
+        placeholder="Leave empty to use the default assistant personality."></textarea>
+      <div class="config-actions">
+        <button id="config-save" type="button">Save &amp; Continue</button>
+      </div>
+      <p class="config-note">Your key is stored in this browser only.</p>
+    </div>
+  </div>
   <button id="btn"><span id="btn-label">Start</span></button>
   <p id="status"></p>
   <div id="card" class="hidden"></div>

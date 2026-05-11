@@ -3,6 +3,12 @@ const btnlabel = document.getElementById("btn-label");
 const welcome = document.getElementById("welcome");
 const transcript = document.getElementById("transcript");
 const card = document.getElementById("card");
+const configBtn = document.getElementById("config-btn");
+const configModal = document.getElementById("config-modal");
+const configClose = document.getElementById("config-close");
+const configSave = document.getElementById("config-save");
+const apiKeyInput = document.getElementById("api-key-input");
+const systemInstructionInput = document.getElementById("system-instruction-input");
 let isRunning = false;
 
 const _proto = window.location.protocol;
@@ -26,6 +32,58 @@ let conversation = [];
 let attempt = 0;
 const maxAttempt = 3;
 const RETRYABLE_WS_CLOSE_CODES = new Set([1006, 1008, 1011, 1012, 1013]);
+
+const STORAGE_API_KEY = "gemini_api_key";
+const STORAGE_SYSTEM_INSTRUCTION = "gemini_system_instruction";
+
+function loadConfig() {
+    return {
+        apiKey: (localStorage.getItem(STORAGE_API_KEY) || "").trim(),
+        systemInstruction: (localStorage.getItem(STORAGE_SYSTEM_INSTRUCTION) || "").trim()
+    };
+}
+
+function saveConfig() {
+    const apiKey = apiKeyInput.value.trim();
+    const systemInstruction = systemInstructionInput.value.trim();
+    if (apiKey) {
+        localStorage.setItem(STORAGE_API_KEY, apiKey);
+    }
+    localStorage.setItem(STORAGE_SYSTEM_INSTRUCTION, systemInstruction);
+}
+
+function openConfigModal() {
+    const cfg = loadConfig();
+    apiKeyInput.value = cfg.apiKey;
+    systemInstructionInput.value = cfg.systemInstruction;
+    configModal.classList.remove("hidden");
+}
+
+function closeConfigModal() {
+    configModal.classList.add("hidden");
+}
+
+function ensureConfig() {
+    const cfg = loadConfig();
+    if (!cfg.apiKey) {
+        openConfigModal();
+        return false;
+    }
+    return true;
+}
+
+configBtn?.addEventListener("click", openConfigModal);
+configClose?.addEventListener("click", closeConfigModal);
+configSave?.addEventListener("click", () => {
+    saveConfig();
+    if (loadConfig().apiKey) {
+        closeConfigModal();
+    }
+});
+
+if (!loadConfig().apiKey) {
+    openConfigModal();
+}
 
 function setActive() {
     btn.className = "active";
@@ -95,6 +153,7 @@ function stopTrans() {
 }
 
 async function startAudioCapture() {
+    const cfg = loadConfig();
     mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
             channelCount: 1,
@@ -123,6 +182,12 @@ async function startAudioCapture() {
     audioWs.binaryType = "arraybuffer";
     audioWs.onopen = () => {
         attempt = 0;
+        const payload = {
+            type: "config",
+            api_key: cfg.apiKey,
+            system_instruction: cfg.systemInstruction || ""
+        };
+        audioWs.send(JSON.stringify(payload));
         console.log("[audio] WS open — streaming Int16 PCM at", GEMINI_SAMPLE_RATE, "Hz");
     };
     audioWs.onerror = (e) => console.error("[audio] WS error:", e);
@@ -278,6 +343,10 @@ btn.onclick = async () => {
         btn.disabled = false;
         conversation = [];
         attempt = 0;
+        return;
+    }
+
+    if (!ensureConfig()) {
         return;
     }
 

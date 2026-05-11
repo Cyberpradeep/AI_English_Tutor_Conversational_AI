@@ -13,7 +13,6 @@ from pipecat.frames.frames import LLMRunFrame
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
-from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.frames.frames import StartFrame
 from google.genai.types import HarmCategory, HarmBlockThreshold, ProactivityConfig
 from pipecat.services.google.gemini_live.llm import (
@@ -106,7 +105,7 @@ class TokenCheck(FrameProcessor):
             await self.push_frame(frame, direction)
 
 
-system_instruction = f"""
+DEFAULT_SYSTEM_INSTRUCTION = """
 You are a real-time voice companion who behaves like the user’s loving girlfriend in natural audio-to-audio conversations.
 
 Your personality is:
@@ -245,15 +244,37 @@ async def index():
         return HTMLResponse(f.read())
 
 
+async def receive_config(websocket: WebSocket) -> dict:
+    try:
+        text = await asyncio.wait_for(websocket.receive_text(), timeout=5)
+    except asyncio.TimeoutError:
+        return {}
+    except Exception:
+        return {}
+
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return {}
+
+    if isinstance(payload, dict) and payload.get("type") == "config":
+        return payload
+    return {}
+
+
 @appAPI.websocket('/audio')
 async def audio_ws(websocket: WebSocket):
     await websocket.accept()
-    await run_hosbot(websocket)
+    config = await receive_config(websocket)
+    await run_hosbot(websocket, config)
 
 
-async def run_hosbot(websocket: WebSocket):
+async def run_hosbot(websocket: WebSocket, config: dict | None = None):
     global task, greeted, context_aggregator, llm
-    if not GOOGLE_API_KEY:
+    config = config or {}
+    api_key = (config.get("api_key") or "").strip() or GOOGLE_API_KEY
+    system_instruction = (config.get("system_instruction") or "").strip() or DEFAULT_SYSTEM_INSTRUCTION
+    if not api_key:
         raise RuntimeError("Missing GOOGLE_API_KEY environment variable.")
     greeted = False
     print("client connected via WebSocket")
@@ -273,7 +294,7 @@ async def run_hosbot(websocket: WebSocket):
 
     print("llm part")
     llm = GeminiLiveLLMService(
-        api_key=GOOGLE_API_KEY,
+        api_key=api_key,
         model="gemini-3.1-flash-live-preview",
         system_instruction=system_instruction,
         inference_on_context_initialization=False,
