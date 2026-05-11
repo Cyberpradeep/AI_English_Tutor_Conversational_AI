@@ -242,12 +242,24 @@ def build_system_instruction(config: dict) -> str:
         lines.append(correction_guidance.get(
             corrections, correction_guidance["off"]))
     if language and language != "auto":
-        lines.append(
-            f"Prefer to speak in {language}. If the user switches languages, follow them.")
+        if language == "tanglish":
+            lines.append(
+                "Speak in Tanglish: mix Tamil and English naturally in the same sentence when helpful.")
+        else:
+            lines.append(
+                f"Prefer to speak in {language}. If the user switches languages, follow them.")
     else:
         lines.append("Follow the user's language when possible.")
 
     return "\n".join(lines).strip()
+
+
+def compose_system_instruction(user_instruction: str, config: dict) -> str:
+    base = user_instruction.strip() if user_instruction else ""
+    profile = build_system_instruction(config)
+    if base:
+        return f"{base}\n\n{profile}"
+    return profile
 
 
 safety_settings = [
@@ -321,9 +333,10 @@ async def run_hosbot(websocket: WebSocket, config: dict | None = None):
     config = config or {}
     api_key = (config.get("api_key") or "").strip() or GOOGLE_API_KEY
     voice_id = (config.get("voice") or "").strip() or "Aoede"
-    system_instruction = (config.get("system_instruction") or "").strip()
-    if not system_instruction:
-        system_instruction = build_system_instruction(config)
+    system_instruction = compose_system_instruction(
+        (config.get("system_instruction") or ""),
+        config
+    )
     if not api_key:
         raise RuntimeError("Missing GOOGLE_API_KEY environment variable.")
     greeted = False
